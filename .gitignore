@@ -50,6 +50,9 @@ flare_tempdir/*
 targets/*
 restart/*
 workflows/default/sunp.log
+scores/*
+sunp/*
+*.nc
 
 # sensitive environment variables
 configuration/set_environment_sensitive.R
