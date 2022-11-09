@@ -12,16 +12,16 @@ s3:
     bucket: drivers/noaa/gefs-v12
   targets:
     endpoint: s3.flare-forecast.org
-    bucket: targets/bvre_v2
+    bucket: targets/sunp_v2
   forecasts:
     endpoint: s3.flare-forecast.org
-    bucket: forecasts/bvre_v2
+    bucket: forecasts/sunp_v2
   forecasts_parquet:
     endpoint: s3.flare-forecast.org
     bucket: forecasts/parquet
   warm_start:
     endpoint: s3.flare-forecast.org
-    bucket: restart/bvre_v2
+    bucket: restart/sunp_v2
   scores:
     endpoint: s3.flare-forecast.org
     bucket: scores/parquet
