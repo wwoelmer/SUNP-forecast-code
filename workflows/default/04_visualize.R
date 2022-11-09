@@ -15,12 +15,12 @@ FLAREr::get_targets(lake_directory, config)
 pdf_file <- FLAREr::plotting_general_2(file_name =  config$run_config$restart_file,
                                        target_file = file.path(config$file_path$qaqc_data_directory, paste0(config$location$site_id, "-targets-insitu.csv")))
 
-if(config$run_config$use_s3){
-  success <- aws.s3::put_object(file = pdf_file, object = file.path(config$location$site_id, basename(pdf_file)), bucket = "analysis")
-  if(success){
-    unlink(pdf_file)
-  }
-}
+#if(config$run_config$use_s3){
+#  success <- aws.s3::put_object(file = pdf_file, object = file.path(config$location$site_id, basename(pdf_file)), bucket = "analysis")
+#  if(success){
+#    unlink(pdf_file)
+#  }
+#}
 
 source(file.path(lake_directory,"R/simple_plot.R"))
 

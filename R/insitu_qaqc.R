@@ -1,4 +1,3 @@
-
 insitu_qaqc <- function(realtime_file,
                         hist_buoy_file,
                         hist_manual_file,
@@ -50,8 +49,7 @@ insitu_qaqc <- function(realtime_file,
   # add depth column and remove from column name
   field_format <- data.frame("DateTime" = as.Date(NA),
                              "Depth" = NA,
-                             "Temp" = NA
-  )
+                             "Temp" = NA)
   
   depths <- c('0.5', '0.75', '0.85', '1.0', '1.5', '1.75', '1.85', '2.0', '2.5', '2.75',
               '2.85', '3.0', '3.5', '3.75', '3.85', '4.5', '4.75', '4.85', '5.5', '5.75', 
@@ -253,6 +251,13 @@ insitu_qaqc <- function(realtime_file,
   
   dh <- na.omit(dh)
   
+  dh <- dh |> 
+    ungroup() |> 
+    mutate(datetime = lubridate::as_datetime(date) + lubridate::hours(hour),
+           site_id = "sunp") |> 
+    rename(observation = value) |> 
+    select(site_id, datetime, depth, variable, observation)
+
   # quick fix to set all hours to 0 to match with `FLAREr::combine_forecast_observations` function
   #dh$hour <- as.numeric(0)
 
