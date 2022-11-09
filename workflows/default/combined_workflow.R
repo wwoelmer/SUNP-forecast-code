@@ -63,4 +63,6 @@ if(noaa_ready){
   config$run_config$forecast_fails <- 0
   FLAREr::update_run_config(config, lake_directory, configure_run_file, new_start_datetime = FALSE)
   
+  RCurl::url.exists("https://hc-ping.com/9af38db8-d058-4e2c-9779-cd69891d9216", timeout = 5)
+  
 }
