@@ -9,19 +9,19 @@ file_path:
 s3:
   drivers:
     endpoint: s3.flare-forecast.org
-    bucket: drivers/noaa/gefs-v12
+    bucket: drivers
   targets:
     endpoint: s3.flare-forecast.org
-    bucket: targets/bvre_v2
+    bucket: targets
   forecasts:
     endpoint: s3.flare-forecast.org
-    bucket: forecasts/bvre_v2
+    bucket: forecasts
   forecasts_parquet:
     endpoint: s3.flare-forecast.org
     bucket: forecasts/parquet
   warm_start:
     endpoint: s3.flare-forecast.org
-    bucket: restart/bvre_v2
+    bucket: restart
   scores:
     endpoint: s3.flare-forecast.org
     bucket: scores/parquet
