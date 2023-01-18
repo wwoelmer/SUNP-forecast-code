@@ -104,8 +104,8 @@ insitu_qaqc <- function(realtime_file,
   #  geom_line(aes(col = as.factor(Depth))) 
   
   data_nodups <- data_nodups %>% 
-    mutate(Temp = ifelse(is.na(Temp_manual), Temp_buoy, Temp_manual)) %>% 
-    select(DateTime, Depth, Temp)
+    dplyr::mutate(Temp = ifelse(is.na(Temp_manual), Temp_buoy, Temp_manual)) %>% 
+    dplyr::select(DateTime, Depth, Temp)
   
   write.csv(data_nodups, hist_all_file, row.names = FALSE)
   
@@ -139,9 +139,6 @@ insitu_qaqc <- function(realtime_file,
   
   
   for(i in 1:nrow(maint)){
-    
-    print(i)
-    
     # get start and end time of one maintenance event
     start <- maint$TIMESTAMP_start[i]
     end <- maint$TIMESTAMP_end[i]
@@ -216,14 +213,14 @@ insitu_qaqc <- function(realtime_file,
     #temp$DateTime <- as.POSIXct(temp$DateTime, tryFormats = c("%Y-%m-%d %T", "%Y-%m-%d"))
     temp$Depth <- depths[i]
     colnames(temp) <- c('DateTime', 'Temp', 'Depth')
-    temp_format <- full_join(temp, temp_format)
+    temp_format <- dplyr::full_join(temp, temp_format)
   }
   
   # put depth as second column and sort by date and depth
   temp_format <- temp_format %>% 
-    mutate(Depth = as.numeric(Depth)) %>% 
-    select( 'DateTime', 'Depth', 'Temp') %>% 
-    arrange(DateTime, Depth)
+    dplyr::mutate(Depth = as.numeric(Depth)) %>% 
+    dplyr::select( 'DateTime', 'Depth', 'Temp') %>% 
+    dplyr::arrange(DateTime, Depth)
   
   # combine with historical data
   h <- read.csv(hist_all_file)
@@ -241,8 +238,8 @@ insitu_qaqc <- function(realtime_file,
            hour = lubridate::hour(DateTime),
            depth = Depth) %>% 
     dplyr::group_by(date, hour, depth) %>% 
-    mutate(temperature = mean(Temp, na.rm = TRUE)) %>% # take the average for each hour, data is every ten minutes
-    distinct(date, hour, depth, .keep_all = TRUE)
+    dplyr::mutate(temperature = mean(Temp, na.rm = TRUE)) %>% # take the average for each hour, data is every ten minutes
+    dplyr::distinct(date, hour, depth, .keep_all = TRUE)
   
   # put into FLARE format
   dh <- dh %>% 
@@ -252,11 +249,11 @@ insitu_qaqc <- function(realtime_file,
   dh <- na.omit(dh)
   
   dh <- dh |> 
-    ungroup() |> 
-    mutate(datetime = lubridate::as_datetime(date) + lubridate::hours(hour),
+    dplyr::ungroup() |> 
+    dplyr::mutate(datetime = lubridate::as_datetime(date) + lubridate::hours(hour),
            site_id = "sunp") |> 
-    rename(observation = value) |> 
-    select(site_id, datetime, depth, variable, observation)
+    dplyr::rename(observation = value) |> 
+    dplyr::select(site_id, datetime, depth, variable, observation)
 
   # quick fix to set all hours to 0 to match with `FLAREr::combine_forecast_observations` function
   #dh$hour <- as.numeric(0)
