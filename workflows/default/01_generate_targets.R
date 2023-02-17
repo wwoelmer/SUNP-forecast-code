@@ -31,11 +31,13 @@ dir.create(file.path(config_obs$file_path$data_directory, "hist-data"),showWarni
 # high frequency buoy data
 FLAREr::get_edi_file(edi_https = "https://pasta.lternet.edu/package/data/eml/edi/499/2/f4d3535cebd96715c872a7d3ca45c196",
                      file = file.path("hist-data", "hist_buoy_do.csv"),
-                     lake_directory)
+                     lake_directory, 
+                    curl_timeout = 120)
 
 FLAREr::get_edi_file(edi_https = "https://pasta.lternet.edu/package/data/eml/edi/499/2/1f903796efc8d79e263a549f8b5aa8a6",
                      file = file.path("hist-data", "hist_buoy_temp.csv"),
-                     lake_directory)
+                     lake_directory,
+                    curl_timeout = 120)
 
 # manually collected data
 if(!file.exists(file.path(lake_directory, 'data_raw', 'hist-data', 'LMP-v2020.1.zip'))){
