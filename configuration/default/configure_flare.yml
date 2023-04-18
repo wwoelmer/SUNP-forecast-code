@@ -6,6 +6,25 @@ file_path:
    configuration_directory: .na # 'C:/Users/wwoel/Desktop/SUNP-forecast/configuration/'
    execute_directory: .na #'C:/Users/wwoel/Desktop/SUNP-forecast/flare_tempdir/'
    run_config: .na #'C:/Users/wwoel/Desktop/SUNP-forecast/configuration/flarer/configure_run.yml'
+s3:
+  drivers:
+    endpoint: s3.flare-forecast.org
+    bucket: drivers/noaa/gefs-v12
+  targets:
+    endpoint: s3.flare-forecast.org
+    bucket: targets/sunp_v2
+  forecasts:
+    endpoint: s3.flare-forecast.org
+    bucket: forecasts/sunp_v2
+  forecasts_parquet:
+    endpoint: s3.flare-forecast.org
+    bucket: forecasts/parquet
+  warm_start:
+    endpoint: s3.flare-forecast.org
+    bucket: restart/sunp_v2
+  scores:
+    endpoint: s3.flare-forecast.org
+    bucket: scores/parquet
 location:
    site_id: sunp
    name: Lake Sunapee
@@ -30,17 +49,17 @@ metadata:
       id: INSERT ORCID
 da_setup:
     da_method: enkf
-    par_fit_method: inflate
-    ensemble_size:  200
+    par_fit_method: perturb_const
+    ensemble_size:  256
     localization_distance: 2 #distance in meters were covariances in the model error are used
     no_negative_states: TRUE
     assimilate_first_step: FALSE
     use_obs_constraint: TRUE
 model_settings:
-   ncore: 2
+   ncore: 4
    model_name: glm #other is "null"
    base_GLM_nml: glm3_woAED.nml
-   modeled_depths: [0.1, 0.5, 1.0, 
+   modeled_depths: [0.0, 0.5, 1.0, 
                     1.5, 2.0, 3.0, 
                     3.5, 4.0, 4.5, 
                     5.0, 5.5, 6.0, 

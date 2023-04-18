@@ -1,3 +1,4 @@
+#renv::restore()
 library(tidyverse)
 library(lubridate)
 
@@ -8,6 +9,9 @@ if(file.exists("~/.aws")){
 
 lake_directory <- here::here()
 update_run_config <- TRUE
+#files.sources <- list.files(file.path(lake_directory, "R"), full.names = TRUE)
+#files.sources <- files.sources[!stringr::str_detect(files.sources, pattern = "old")]
+#sapply(files.sources, source)
 
 configure_run_file <- "configure_run.yml"
 config_set_name <- "default_aed"
@@ -17,6 +21,7 @@ config <- FLAREr::set_configuration(configure_run_file,lake_directory, config_se
 config <- FLAREr::get_restart_file(config, lake_directory)
 
 FLAREr::get_targets(lake_directory, config)
+
 
 noaa_forecast_path <- FLAREr::get_driver_forecast_path(config,
                                                forecast_model = config$met$forecast_met_model)
@@ -40,6 +45,7 @@ if(!is.null(inflow_forecast_path)){
   inflow_file_dir <- NULL
 }
 
+
 pars_config <- readr::read_csv(file.path(config$file_path$configuration_directory, config$model_settings$par_config_file), col_types = readr::cols())
 obs_config <- readr::read_csv(file.path(config$file_path$configuration_directory, config$model_settings$obs_config_file), col_types = readr::cols())
 states_config <- readr::read_csv(file.path(config$file_path$configuration_directory, config$model_settings$states_config_file), col_types = readr::cols())
@@ -48,25 +54,31 @@ states_config <- readr::read_csv(file.path(config$file_path$configuration_direct
 
 #Download and process observations (already done)
 
-FLAREr::get_stacked_noaa(lake_directory, config, averaged = TRUE)
-  
-  
-met_out <- FLAREr::generate_glm_met_files(obs_met_file = file.path(config$file_path$noaa_directory, "noaa", "NOAAGEFS_1hr_stacked_average", config$location$site_id, paste0("observed-met-noaa_",config$location$site_id,".nc")),
+met_out <- FLAREr::generate_met_files_arrow(obs_met_file = NULL,
                                             out_dir = config$file_path$execute_directory,
-                                            forecast_dir = forecast_dir,
-                                            config = config)
+                                            start_datetime = config$run_config$start_datetime,
+                                            end_datetime = config$run_config$end_datetime,
+                                            forecast_start_datetime = config$run_config$forecast_start_datetime,
+                                            forecast_horizon =  config$run_config$forecast_horizon,
+                                            site_id = config$location$site_id,
+                                            use_s3 = TRUE,
+                                            bucket = config$s3$drivers$bucket,
+                                            endpoint = config$s3$drivers$endpoint,
+                                            local_directory = NULL,
+                                            use_forecast = TRUE,
+                                            use_ler_vars = FALSE)
 
-#Need to remove the 00 ensemble member because it only goes 16-days in the future
-met_out$filenames <- met_out$filenames[!stringr::str_detect(met_out$filenames, "ens00")]
+met_out$filenames <- met_out$filenames[!stringr::str_detect(met_out$filenames, "31")]
 
-#Create observation matrix
 obs <- FLAREr::create_obs_matrix(cleaned_observations_file_long = file.path(config$file_path$qaqc_data_directory,paste0(config$location$site_id, "-targets-insitu.csv")),
                                  obs_config = obs_config,
                                  config)
+
 obs[1, ,]
 obs[2, ,]
 #obs[,2:96,] <- NA
 # first dimension is states, time, depth
+
 
 states_config <- FLAREr::generate_states_to_obs_mapping(states_config, obs_config)
 
@@ -96,60 +108,54 @@ da_forecast_output <- FLAREr::run_da_forecast(states_init = init$states,
                                               obs_config = obs_config,
                                               management = NULL,
                                               da_method = config$da_setup$da_method,
-                                              par_fit_method = config$da_setup$par_fit_method)
+                                              par_fit_method = config$da_setup$par_fit_method,
+                                              obs_secchi = NULL,
+                                              obs_depth = NULL)
 
-# Save forecast
 
 saved_file <- FLAREr::write_forecast_netcdf(da_forecast_output = da_forecast_output,
                                             forecast_output_directory = config$file_path$forecast_output_directory,
                                             use_short_filename = TRUE)
 
-forecast_file <- FLAREr::write_forecast_csv(da_forecast_output = da_forecast_output,
-                                            forecast_output_directory = config$file_path$forecast_output_directory,
-                                            use_short_filename = TRUE)
+forecast_df <- FLAREr::write_forecast_arrow(da_forecast_output = da_forecast_output,
+                                            use_s3 = config$run_config$use_s3,
+                                            bucket = config$s3$forecasts_parquet$bucket,
+                                            endpoint = config$s3$forecasts_parquet$endpoint,
+                                            local_directory = file.path(lake_directory, "forecasts/parquet"))
 
-pdf_file <- FLAREr::plotting_general_2(file_name = saved_file,  #config$run_config$restart_file,
-                                       target_file = file.path(config$file_path$qaqc_data_directory, paste0(config$location$site_id, "-targets-insitu.csv")))
+message("Writing arrow score")
 
-aws.s3::put_object(file = forecast_file,
-                   object = file.path(config$location$site_id, config$run_config$sim_name, basename(forecast_file)),
-                   bucket = "forecasts-csv",
-                   region = Sys.getenv("AWS_DEFAULT_REGION"),
-                   use_https = as.logical(Sys.getenv("USE_HTTPS")))
+message("Grabbing last 16-days of forecasts")
+reference_datetime_format <- "%Y-%m-%d %H:%M:%S"
+past_days <- strftime(lubridate::as_datetime(forecast_df$reference_datetime[1]) - lubridate::days(config$run_config$forecast_horizon), tz = "UTC")
 
-dir.create(file.path(lake_directory, "scores", config$location$site_id, config$run_config$sim_name), recursive = TRUE, showWarnings = FALSE)
-score_file <- FLAREr::generate_forecast_score(targets_file = file.path(config$file_path$qaqc_data_directory,paste0(config$location$site_id, "-targets-insitu.csv")),
-                                              forecast_file = forecast_file,
-                                              output_directory = file.path(lake_directory, "scores", config$location$site_id, config$run_config$sim_name))
+vars <- FLAREr:::arrow_env_vars()
+s3 <- arrow::s3_bucket(bucket = config$s3$forecasts_parquet$bucket, endpoint_override = config$s3$forecasts_parquet$endpoint)
+past_forecasts <- arrow::open_dataset(s3) |>
+  dplyr::filter(model_id == forecast_df$model_id[1],
+                site_id == forecast_df$site_id[1],
+                reference_datetime > past_days) |>
+  dplyr::collect()
+FLAREr:::unset_arrow_vars(vars)
 
+message("Combining forecasts")
+combined_forecasts <- dplyr::bind_rows(forecast_df, past_forecasts)
 
-aws.s3::put_object(file = score_file,
-                   object = file.path(config$location$site_id, config$run_config$sim_name, basename(score_file)),
-                   bucket = "scores",
-                   region = Sys.getenv("AWS_DEFAULT_REGION"),
-                   use_https = as.logical(Sys.getenv("USE_HTTPS")))
+message("Scoring forecasts")
+FLAREr::generate_forecast_score_arrow(targets_file = file.path(config$file_path$qaqc_data_directory,paste0(config$location$site_id, "-targets-insitu.csv")),
+                                      forecast_df = combined_forecasts,
+                                      use_s3 = config$run_config$use_s3,
+                                      bucket = config$s3$scores$bucket,
+                                      endpoint = config$s3$scores$endpoint,
+                                      local_directory = file.path(lake_directory, "scores/parquet"),
+                                      variable_types = c("state","parameter"))
 
+FLAREr::put_forecast(saved_file, eml_file_name = NULL, config)
 
-#Create EML Metadata
-eml_file_name <- FLAREr::create_flare_metadata(file_name = saved_file,
-                                               da_forecast_output = da_forecast_output)
-
-#Clean up temp files and large objects in memory
-#unlink(config$file_path$execute_directory, recursive = TRUE)
-
-FLAREr::put_forecast(saved_file, eml_file_name, config)
 
 rm(da_forecast_output)
 gc()
 
-FLAREr::update_run_config(config, lake_directory, configure_run_file, saved_file, new_horizon = 35, day_advance = 1)
-
-setwd(lake_directory)
-unlink(config$run_config$restart_file)
-unlink(forecast_dir, recursive = TRUE)
-unlink(file.path(lake_directory, "flare_tempdir", config$location$site_id, config$run_config$sim_name), recursive = TRUE)
-
+FLAREr::update_run_config(config, lake_directory, configure_run_file, saved_file, new_horizon = 16, day_advance = 1)
 
 message(paste0("successfully generated flare forecats for: ", basename(saved_file)))
-
-

@@ -1,4 +1,3 @@
-
 insitu_qaqc <- function(realtime_file,
                         hist_buoy_file,
                         hist_manual_file,
@@ -50,8 +49,7 @@ insitu_qaqc <- function(realtime_file,
   # add depth column and remove from column name
   field_format <- data.frame("DateTime" = as.Date(NA),
                              "Depth" = NA,
-                             "Temp" = NA
-  )
+                             "Temp" = NA)
   
   depths <- c('0.5', '0.75', '0.85', '1.0', '1.5', '1.75', '1.85', '2.0', '2.5', '2.75',
               '2.85', '3.0', '3.5', '3.75', '3.85', '4.5', '4.75', '4.85', '5.5', '5.75', 
@@ -106,8 +104,8 @@ insitu_qaqc <- function(realtime_file,
   #  geom_line(aes(col = as.factor(Depth))) 
   
   data_nodups <- data_nodups %>% 
-    mutate(Temp = ifelse(is.na(Temp_manual), Temp_buoy, Temp_manual)) %>% 
-    select(DateTime, Depth, Temp)
+    dplyr::mutate(Temp = ifelse(is.na(Temp_manual), Temp_buoy, Temp_manual)) %>% 
+    dplyr::select(DateTime, Depth, Temp)
   
   write.csv(data_nodups, hist_all_file, row.names = FALSE)
   
@@ -141,9 +139,6 @@ insitu_qaqc <- function(realtime_file,
   
   
   for(i in 1:nrow(maint)){
-    
-    print(i)
-    
     # get start and end time of one maintenance event
     start <- maint$TIMESTAMP_start[i]
     end <- maint$TIMESTAMP_end[i]
@@ -218,14 +213,14 @@ insitu_qaqc <- function(realtime_file,
     #temp$DateTime <- as.POSIXct(temp$DateTime, tryFormats = c("%Y-%m-%d %T", "%Y-%m-%d"))
     temp$Depth <- depths[i]
     colnames(temp) <- c('DateTime', 'Temp', 'Depth')
-    temp_format <- full_join(temp, temp_format)
+    temp_format <- dplyr::full_join(temp, temp_format)
   }
   
   # put depth as second column and sort by date and depth
   temp_format <- temp_format %>% 
-    mutate(Depth = as.numeric(Depth)) %>% 
-    select( 'DateTime', 'Depth', 'Temp') %>% 
-    arrange(DateTime, Depth)
+    dplyr::mutate(Depth = as.numeric(Depth)) %>% 
+    dplyr::select( 'DateTime', 'Depth', 'Temp') %>% 
+    dplyr::arrange(DateTime, Depth)
   
   # combine with historical data
   h <- read.csv(hist_all_file)
@@ -240,6 +235,7 @@ insitu_qaqc <- function(realtime_file,
   # extract midnight observations
   dh <- dh %>%
     dplyr::mutate(date = lubridate::date(DateTime),
+
                   hour = lubridate::hour(DateTime),
                   depth = Depth) %>% 
     dplyr::filter(hour == 0) %>% 
@@ -256,6 +252,7 @@ insitu_qaqc <- function(realtime_file,
   #  dplyr::group_by(date, hour, depth) %>% 
   #  mutate(temperature = mean(Temp, na.rm = TRUE)) %>% # take the average for each hour, data is every ten minutes
   #  distinct(date, hour, depth, .keep_all = TRUE)
+
   
   # put into FLARE format
   dh <- dh %>% 
@@ -271,6 +268,13 @@ insitu_qaqc <- function(realtime_file,
   attr(dh$time, "tzone") <- "UTC"
   dh$time <- dh$time - 60*60*4
   
+  dh <- dh |> 
+    dplyr::ungroup() |> 
+    dplyr::mutate(datetime = lubridate::as_datetime(date) + lubridate::hours(hour),
+           site_id = "sunp") |> 
+    dplyr::rename(observation = value) |> 
+    dplyr::select(site_id, datetime, depth, variable, observation)
+
   # quick fix to set all hours to 0 to match with `FLAREr::combine_forecast_observations` function
   #dh$hour <- as.numeric(0)
 

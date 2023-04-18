@@ -15,7 +15,7 @@ source(file.path(lake_directory, "R", "insitu_qaqc_withDO.R"))
 
 #' Generate the `config_obs` object and create directories if necessary
 
-config_obs <- FLAREr::initialize_obs_processing(lake_directory, observation_yml = "observation_processing.yml")
+config_obs <- FLAREr::initialize_obs_processing(lake_directory, observation_yml = "observation_processing.yml", config_set_name = config_set_name)
 config <- FLAREr::set_configuration(configure_run_file,lake_directory, config_set_name = config_set_name)
 
 #' Clone or pull from data repositories
@@ -32,11 +32,13 @@ dir.create(file.path(config_obs$file_path$data_directory, "hist-data"),showWarni
 # high frequency buoy data
 FLAREr::get_edi_file(edi_https = "https://pasta.lternet.edu/package/data/eml/edi/499/2/f4d3535cebd96715c872a7d3ca45c196",
                      file = file.path("hist-data", "hist_buoy_do.csv"),
-                     lake_directory)
+                     lake_directory)#, 
+                    #curl_timeout = 120)
 
 FLAREr::get_edi_file(edi_https = "https://pasta.lternet.edu/package/data/eml/edi/499/2/1f903796efc8d79e263a549f8b5aa8a6",
                      file = file.path("hist-data", "hist_buoy_temp.csv"),
-                     lake_directory)
+                     lake_directory)#,
+                    #curl_timeout = 120)
 
 # manually collected data
 if(!file.exists(file.path(lake_directory, 'data_raw', 'hist-data', 'LMP-v2020.1.zip'))){
@@ -68,6 +70,7 @@ message("Successfully generated targets")
 
 FLAREr::put_targets(site_id = config_obs$site_id,
                     cleaned_insitu_file,
-                    use_s3 = config$run_config$use_s3)
+                    use_s3 = config$run_config$use_s3,
+                    config = config)
 
 message("Successfully moved targets to s3 bucket")
