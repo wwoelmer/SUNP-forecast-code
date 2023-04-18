@@ -37,7 +37,7 @@ insitu_qaqc <- function(realtime_file,
   
   # and historical high frequency buoy data
   # extract noon measurements only and only observations when buoy is deployed
-  field_all <- read.csv(hist_buoy_file)
+  field_all <- read.csv(hist_buoy_file[1])
   field_all$datetime <- as.POSIXct(field_all$datetime, format = "%Y-%m-%d %H:%M:%S")
   field_noon <- field_all %>% 
     dplyr::mutate(day = day(datetime)) %>% 
@@ -237,21 +237,39 @@ insitu_qaqc <- function(realtime_file,
   
   # make some simple QAQC corrections, e.g. if temp > 100C, etc.
   
-  # take hourly average
-  dh <- dh %>% 
+  # extract midnight observations
+  dh <- dh %>%
     dplyr::mutate(date = lubridate::date(DateTime),
-           hour = lubridate::hour(DateTime),
-           depth = Depth) %>% 
-    dplyr::group_by(date, hour, depth) %>% 
-    mutate(temperature = mean(Temp, na.rm = TRUE)) %>% # take the average for each hour, data is every ten minutes
-    distinct(date, hour, depth, .keep_all = TRUE)
+                  hour = lubridate::hour(DateTime),
+                  depth = Depth) %>% 
+    dplyr::filter(hour == 0) %>% 
+    dplyr::group_by(date, depth, hour) %>% 
+    dplyr::mutate(temperature = mean(Temp, na.rm = TRUE)) %>% # take the average for each hour, data is every ten minutes
+    #dplyr::mutate(oxygen = mean(DO, na.rm = TRUE)) %>%   
+    dplyr::distinct(date, depth, .keep_all = TRUE)
+ 
+   # take hourly average
+  #dh <- dh %>% 
+  #  dplyr::mutate(date = lubridate::date(DateTime),
+  #         hour = lubridate::hour(DateTime),
+  #         depth = Depth) %>% 
+  #  dplyr::group_by(date, hour, depth) %>% 
+  #  mutate(temperature = mean(Temp, na.rm = TRUE)) %>% # take the average for each hour, data is every ten minutes
+  #  distinct(date, hour, depth, .keep_all = TRUE)
   
   # put into FLARE format
   dh <- dh %>% 
-    dplyr::select(-c(DateTime, Depth, Temp)) %>% 
-    tidyr::pivot_longer(cols = variables, names_to = 'variable', values_to = 'value') 
+    dplyr::select(-c(Depth, Temp)) %>% 
+    tidyr::pivot_longer(cols = variables, names_to = 'variable', values_to = 'value') %>% 
+    mutate(time = as.POSIXct(DateTime),
+           site_id = 'sunp') %>% 
+    ungroup() %>% 
+    select(time, site_id, depth, value, variable) %>% 
+    rename(observed = value)
   
   dh <- na.omit(dh)
+  attr(dh$time, "tzone") <- "UTC"
+  dh$time <- dh$time - 60*60*4
   
   # quick fix to set all hours to 0 to match with `FLAREr::combine_forecast_observations` function
   #dh$hour <- as.numeric(0)

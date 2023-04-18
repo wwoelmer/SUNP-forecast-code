@@ -6,16 +6,17 @@ message("Beginning generate targets")
 #' Set the lake directory to the repository directory
 
 lake_directory <- here::here()
+config_set_name <- "default_aed"
 
 #' Source the R files in the repository
 
 #source(file.path(lake_directory, "R", "workflow_functions.R"))
-source(file.path(lake_directory, "R", "insitu_qaqc.R"))
+source(file.path(lake_directory, "R", "insitu_qaqc_withDO.R"))
 
 #' Generate the `config_obs` object and create directories if necessary
 
-config_obs <- FLAREr::initialize_obs_processing(lake_directory, observation_yml = "observation_processing.yml", config_set_name = config_set_name)
-config <- FLAREr::set_configuration(configure_run_file,lake_directory, config_set_name = Sys.getenv("CONFIG_SET"))
+config_obs <- FLAREr::initialize_obs_processing(lake_directory, observation_yml = "observation_processing.yml")
+config <- FLAREr::set_configuration(configure_run_file,lake_directory, config_set_name = config_set_name)
 
 #' Clone or pull from data repositories
 
@@ -52,11 +53,11 @@ if(!file.exists(file.path(lake_directory, 'data_raw', 'hist-data', 'LMP-v2020.1.
 
 # QAQC insitu buoy data
 cleaned_insitu_file <- insitu_qaqc(realtime_file = file.path(config_obs$file_path$data_directory, config_obs$insitu_obs_fname[1]),
-                                   hist_buoy_file = file.path(config_obs$file_path$data_directory, config_obs$insitu_obs_fname[2]),
+                                   hist_buoy_file = c(file.path(config_obs$file_path$data_directory, config_obs$insitu_obs_fname[2]), file.path(config_obs$file_path$data_directory, config_obs$insitu_obs_fname[5])),
                                    hist_manual_file = file.path(config_obs$file_path$data_directory, config_obs$insitu_obs_fname[3]),
                                    hist_all_file =  file.path(config_obs$file_path$data_directory, config_obs$insitu_obs_fname[4]),
                                    maintenance_url = "https://docs.google.com/spreadsheets/d/1IfVUlxOjG85S55vhmrorzF5FQfpmCN2MROA_ttEEiws/edit?usp=sharing",
-                                   variables = "temperature",
+                                   variables = c("temperature", "oxygen"),
                                    cleaned_insitu_file = file.path(config_obs$file_path$targets_directory, config_obs$site_id, paste0(config_obs$site_id,"-targets-insitu.csv")),
                                    config = config_obs,
                                    lake_directory = lake_directory)
