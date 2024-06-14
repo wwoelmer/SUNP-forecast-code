@@ -17,12 +17,13 @@ dir.create(dest, recursive = TRUE)
 dest <- file.path(getwd(), 'targets', site_id, sim_name)
 dir.create(dest, recursive = TRUE)
 
+options(timeout = 60*20) # set longer timeout to five minutes so the download can complete
 
 ##### download FLARE score files
 # published on Zenodo at Woelmer WM, Thomas RQ, Olsson F, et al (2023) https://doi.org/10.5281/zenodo.8212702
-scores <- "https://zenodo.org/records/10223812/files/forecasts.zip?download=1"
+scores <- "https://zenodo.org/records/10223812/files/scores.zip?download=1"
 scores_dest <- file.path(lake_directory, 'scores', site_id, sim_name, "scores.zip")
-download.file(url = scores, destfile = scores_dest)
+download.file(url = scores, destfile = scores_dest, mode = 'wb')
 unzip(scores_dest, exdir = file.path(lake_directory, 'scores', site_id, sim_name))
 unlink(scores_dest)
 
@@ -42,15 +43,14 @@ targets_dest <- file.path(lake_directory, 'targets', site_id, sim_name, "sunp-ta
 download.file(url = targets, destfile = targets_dest)
 
 ##### download met driver data
-options(timeout = 60*5) # set longer timeout to five minutes so the download can complete
 met <- "https://zenodo.org/records/10223812/files/drivers.zip?download=1"
 met_dest <- file.path(lake_directory, "drivers.zip")
-download.file(url = met, destfile = met_dest)
+download.file(url = met, destfile = met_dest, mode = 'wb')
 unzip(met_dest)
 unlink(met_dest)
 
 # move folder to follow file structure expected by FLARE
-dir.create(file.path(lake_directory, 'drivers/noaa/gefs-v12-reprocess/stage3/parquet/sunp'))
+dir.create(file.path(lake_directory, 'drivers/noaa/gefs-v12-reprocess/stage3/parquet/sunp'), recursive = TRUE)
 file.copy(from = file.path(lake_directory, 'drivers/noaa/gefs-v12-reprocess/stage3/sunp/part-0.parquet'),
           to = file.path(lake_directory, 'drivers/noaa/gefs-v12-reprocess/stage3/parquet/sunp/part-0.parquet'),
           overwrite = TRUE, recursive = FALSE, copy.mode = TRUE)
