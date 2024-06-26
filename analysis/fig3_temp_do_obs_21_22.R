@@ -46,14 +46,15 @@ temp_C <- obs[obs$variable=='temperature',]
 ##################################################################################################
 # oxygen plots
 
-a <- ggplot(data = obs_mgL, aes(x = as.Date(mo_day, format = "%m-%d"), y = observed*32/1000, color = as.factor(year))) +
+a <- ggplot(data = obs_mgL, aes(x = as.Date(mo_day, format = "%m-%d"), y = observed*32/1000, 
+                                color = as.factor(year))) +
   geom_line() +
   facet_wrap(~label, ncol = 1) +
   scale_x_date(date_labels = "%b") +
   scale_color_manual(values = c('#17BEBB', '#9E2B25')) +
   ylab('Dissolved oxygen (mg/L)') +
   xlab('Date') +
-  geom_point(aes(y = mix_val*32/1000, x = as.Date(mix_date, format = "%m-%d"), shape = as.factor(year)), size = 2) +
+  geom_point(aes(y = mix_val*32/1000, x = as.Date(mix_date, format = "%m-%d")), shape = 15, size = 2) +
   labs(color = 'Year',
        shape = 'Turnover') +
   theme_bw() +
@@ -104,7 +105,8 @@ t_a <- ggplot(data = temp_C, aes(x = as.Date(mo_day, format = "%m-%d"), y = obse
   geom_line() +
   scale_color_manual(values = c('#17BEBB', '#9E2B25')) +
   facet_wrap(~label, ncol = 1) +
-  geom_point(aes(y = mix_val, x = as.Date(mix_date, format = "%m-%d"), shape = as.factor(year)), size = 2) +
+  geom_point(aes(y = mix_val, x = as.Date(mix_date, format = "%m-%d"), 
+                 ), shape = 15, size = 2) +
   xlab('Date') +
   ylab('Temperature (°C)') +
   labs(color = 'Year',
