@@ -52,8 +52,8 @@ dpts <- ggplot(mean_crps, aes(x = horizon, y = mean_crps, color = as.factor(dept
   geom_line() +
   facet_wrap(~year) +
   theme_bw() +
-  ylab('Mean CRPS') +
-  labs(color = 'Depth')
+  ylab(expression(paste("Mean CRPS (", degree, "C)"))) + # Add degree symbol to y-axis label
+  labs(color = 'Depth (m)')
 dpts
 
 ggsave('./figures/figS9_all_depths_temp.tiff', dpts, scale = 0.6, dpi = 300, 
