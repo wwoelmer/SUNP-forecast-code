@@ -47,7 +47,7 @@ sc <- sc %>%
 # reliability diagrams
 x <- sc %>% 
   filter(variable == "oxygen" & depth == 1 & horizon == 3)
-out <- plyr::ddply(sc, c("variable", "depth", "horizon"), \(x){
+out <- plyr::ddply(sc, c("variable", "depth", "horizon", "year"), \(x){
   print(head(x))
   dat <- data.frame(variable = x$variable[1],
                     depth = x$depth[1],
@@ -90,31 +90,47 @@ out <- plyr::ddply(sc, c("variable", "depth", "horizon"), \(x){
   return(dat)
 })
 
-hrzn <- c(1, 7, 21, 35)
-plist <- lapply(hrzn, \(h) {
-  out %>% 
-    filter(horizon == h) %>% 
-    ggplot(aes(x = bin, y = bin)) +
-    geom_line(aes(y = obs_freq), size = 2) +  
-    geom_point(color = 'black') +
-    facet_wrap(depth ~ fct_rev(variable)) +
-    #coord_equal(xlim = c(0, 100), ylim = c(0, 100)) +
-    ggtitle(paste0('Horizon = ', h)) +
-    theme_bw()
-})
-
-patchwork::wrap_plots(plist, guides = "collect")
-
 rel_p <- ggplot(out, aes(x = bin, y = bin, color = as.factor(horizon))) +
   geom_line(aes(y = obs_freq, color = as.factor(horizon)), size = 1) +
   geom_point(color = 'black') +
   facet_wrap(depth ~ fct_rev(variable)) +
   theme_bw() +
+  scale_x_continuous(breaks = seq(0, 100, by = 10)) + # Set x-axis ticks every 10 units
   xlab('Forecast confidence interval (%)') +
   ylab('Percent of observations within forecast interval') +
-  labs(color = 'Forecast Horizon') +
+  labs(color = 'Forecast Horizon (days)') +
   theme(text = element_text(size = 14))
   
+out %>% 
+  filter(depth==1) %>% 
+ggplot(aes(x = bin, y = bin, color = as.factor(horizon))) +
+  geom_line(aes(y = obs_freq, color = as.factor(horizon)), size = 1) +
+  geom_line(color = 'black') +
+  facet_wrap(fct_rev(variable) ~ year) +
+  theme_bw() +
+  scale_x_continuous(breaks = seq(0, 100, by = 10)) + # Set x-axis ticks every 10 units
+  xlab('Forecast confidence interval (%)') +
+  ylab('Percent of observations within forecast interval') +
+  labs(color = 'Forecast Horizon (days)') +
+  theme(text = element_text(size = 14)) +
+  ggtitle('1.0 m forecasts')
+
+
+out %>% 
+  filter(depth==10) %>% 
+  ggplot(aes(x = bin, y = bin, color = as.factor(horizon))) +
+  geom_line(aes(y = obs_freq, color = as.factor(horizon)), size = 1) +
+  geom_line(color = 'black') +
+  facet_wrap(fct_rev(variable) ~ year) +
+  theme_bw() +
+  scale_x_continuous(breaks = seq(0, 100, by = 10)) + # Set x-axis ticks every 10 units
+  xlab('Forecast confidence interval (%)') +
+  ylab('Percent of observations within forecast interval') +
+  labs(color = 'Forecast Horizon (days)') +
+  theme(text = element_text(size = 14)) +
+  ggtitle('10.0 m forecasts')
+
+
 rel_p
 
 ggsave('./figures/figs6_reliability_plot.tiff', rel_p, scale = 0.6, dpi = 300, 
