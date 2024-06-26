@@ -106,9 +106,7 @@ ggplot(files_summ, aes(x = as.Date(datetime), y = percent_turnover, color = refe
   geom_hline(aes(yintercept = 1)) +
   facet_wrap(~year, scales = 'free') +
   theme_bw() +
-  theme(legend.position = "none") +
-  ylab('Predicted difference between 0.1 m and 10 m temperature')
-
+  theme(legend.position = "none") 
 
 
 turn <- files_summ %>% 
@@ -128,7 +126,7 @@ chance_turnover <- ggplot(turn, aes(x = horizon, y = percent_turnover)) +
   geom_line() +
   scale_x_reverse() +
   geom_hline(aes(yintercept = 50)) +
-  facet_wrap(~year, scales = 'free') +
+  facet_wrap(~year) +
   xlab('Days before turnover') +
   ylab('Percent chance of turnover') +
   theme_bw()
